@@ -3,8 +3,7 @@ from telegram import (
     Update,
     ReplyKeyboardMarkup,
     InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    LabeledPrice
+    InlineKeyboardMarkup
 )
 
 from telegram.ext import (
@@ -14,11 +13,11 @@ from telegram.ext import (
     ConversationHandler,
     CallbackQueryHandler,
     ContextTypes,
-    PreCheckoutQueryHandler,
     filters
 )
 
 TOKEN = "8541678914:AAFux-COt-fm2IZPRHO-MQu_TgSDDh9M5l8"
+ADMIN_ID =1638005081 # 🔥 replace with your telegram user id
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +25,13 @@ NAME, AGE, STATE, CITY, Q1, Q2, Q3, Q4, Q5, GENDER, IDEAL = range(11)
 
 PAGE_SIZE = 5
 
-# ------------------ YOUR PROFILE PHOTOS ------------------
+# ------------------ QR IMAGE ------------------
+QR_IMAGE = "AgACAgUAAxkBAALLGWnbZnI_-2awAZVOxaoGgUnyUsrNAAIWD2sb20fgVsvJ2nHqOReTAQADAgADeQADOwQ"
+
+# ------------------ PREMIUM USERS ------------------
+PREMIUM_USERS = set()
+
+# ------------------ PROFILES ------------------
 PROFILES_DB = { ("Male","Younger"):[
 {"name":"Ananya","age":22,"photo":"AgACAgUAAxkBAAK-yGnbJu-dxuoVwcPDgQt_vVCHr8uKAAJfDmsb20fgVqmkrHoxdKvPAQADAgADeQADOwQ"},
 {"name":"Priya","age":23,"photo":"AgACAgUAAxkBAAK-zGnbJxyG4j-r15VXx_ofzDLrQ634AAJgDmsb20fgVvm1BSUlHna_AQADAgADeQADOwQ"},
@@ -106,9 +111,42 @@ PROFILES_DB = { ("Male","Younger"):[
 ],
 
 }
+# ------------------ FILE ID GETTER ------------------
+async def get_file_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.photo:
+        file_id = update.message.photo[-1].file_id
+        await update.message.reply_text(f"📸 FILE ID:\n{file_id}")
+
+# ------------------ UTR HANDLER ------------------
+async def handle_utr_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if context.user_data.get("awaiting_utr"):
+
+        user = update.effective_user
+        utr = update.message.text
+
+        context.user_data["utr"] = utr
+        context.user_data["awaiting_utr"] = False
+
+        # ✅ SEND DETAILS TO ADMIN
+        await context.bot.send_message(
+            chat_id=ADMIN_ID,
+            text=
+            f"💰 New Payment Request\n\n"
+            f"👤 Name: {user.first_name}\n"
+            f"📛 Username: @{user.username if user.username else 'Not available'}\n"
+            f"🆔 User ID: {user.id}\n"
+            f"💳 UTR: {utr}"
+        )
+
+        # ✅ USER MESSAGE
+        await update.message.reply_text(
+            "✅ Thank you!\n\n"
+            "Your payment is under verification.\n\n"
+            "⏳ Our team will review and contact you shortly."
+        )
 
 # ------------------ START ------------------
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Enter your name:")
     return NAME
@@ -131,43 +169,63 @@ async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["city"] = update.message.text
 
     keyboard=[["Yes","No"]]
-    await update.message.reply_text("Are you interested in having s*x with strangers?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
+    await update.message.reply_text(
+        "Are you interested in having s*x with strangers?",
+        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
+    )
     return Q1
 
 async def q1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard=[["Yes","No"]]
-    await update.message.reply_text("Are you interested in having s*x with multiple partners?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
+    await update.message.reply_text(
+        "Are you interested in having s*x with multiple partners?",
+        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
+    )
     return Q2
 
 async def q2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard=[["Yes","No"]]
-    await update.message.reply_text("Are you interested in nude video calls?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
+    await update.message.reply_text(
+        "Are you interested in making n*de video calls and sharing n*de photos?",
+        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
+    )
     return Q3
 
 async def q3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard=[["Yes","No"]]
-    await update.message.reply_text("Are you interested in having s*x outdoors?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
+    await update.message.reply_text(
+        "Are you interested in having s*x outdoors?",
+        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
+    )
     return Q4
 
 async def q4(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard=[["Yes","No"]]
-    await update.message.reply_text("Are you interested in sharing nude photos?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
+    await update.message.reply_text(
+        "Are you interested in recording ehile having s*x?",
+        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
+    )
     return Q5
 
 async def q5(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard=[["Male","Female"]]
-    await update.message.reply_text("Select gender preference", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
+    await update.message.reply_text(
+        "Select gender preference",
+        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
+    )
     return GENDER
 
 async def gender(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["gender"] = update.message.text
 
     keyboard=[["Younger","Older","Does not matter"]]
-    await update.message.reply_text("Ideal type?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
+    await update.message.reply_text(
+        "Ideal type?",
+        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
+    )
     return IDEAL
 
-# ------------------ PROFILE DISPLAY ------------------
-
+# ------------------ SHOW PROFILES ------------------
 async def ideal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["ideal_type"] = update.message.text
     context.user_data["index"] = 0
@@ -209,67 +267,66 @@ async def send_profiles(update, context):
             reply_markup=keyboard
         )
 
-    context.user_data["index"] = index + PAGE_SIZE
+    context.user_data["index"] += PAGE_SIZE
 
     load_more = InlineKeyboardMarkup([
         [InlineKeyboardButton("🔄 Load More", callback_data="load_more")]
     ])
 
-    await context.bot.send_message(chat_id=chat_id, text="👇 Load more profiles", reply_markup=load_more)
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="👇 Load more profiles",
+        reply_markup=load_more
+    )
 
-# ------------------ BUTTON HANDLER ------------------
-
+# ------------------ BUTTON ------------------
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
     await query.answer()
 
     data = query.data
+    user_id = query.from_user.id
 
     if data == "load_more":
         await send_profiles(update, context)
 
     elif data.startswith("chat_"):
 
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("💎 Unlock Premium (500 ⭐)", callback_data="pay")]
-        ])
+        if user_id not in PREMIUM_USERS:
+
+            # ✅ MESSAGE BEFORE QR
+            await query.message.reply_text(
+                "🔒 Premium Access Required\n\n"
+                "This fee helps ensure that all members are genuine and that everyone’s identity and privacy remain protected.\n\n"
+                "It also helps maintain a safe and trusted community."
+            )
+
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("✅ I Paid", callback_data="paid")]
+            ])
+
+            await context.bot.send_photo(
+                chat_id=query.message.chat_id,
+                photo=QR_IMAGE,
+                caption=
+                "💎 Become a member of the premium community\n\n"
+                "Pay the joining fee using the QR code above.\n\n"
+                "After payment, click 'I Paid'.",
+                reply_markup=keyboard
+            )
+            return
+
+        await query.message.reply_text("💬 Chat unlocked (feature coming soon)")
+
+    elif data == "paid":
+
+        context.user_data["awaiting_utr"] = True
 
         await query.message.reply_text(
-            "🔒 Premium Access Required\n\n"
-            "This fee helps us ensure that all members of the community are genuine and that everyone’s identity and privacy remain protected.\n\n"
-            "It also helps maintain a safe and trusted environment for meaningful connections.\n\n"
-            "💎 Unlock premium access to continue and chat with your matches.",
-            reply_markup=keyboard
+            "💳 Payment Verification\n\n"
+            "Please enter your UTR (Transaction ID) to verify your payment."
         )
-
-    elif data == "pay":
-
-        prices = [LabeledPrice("Premium Access", 500)]
-
-        await context.bot.send_invoice(
-            chat_id=query.message.chat_id,
-            title="Premium Community Access",
-            description="Unlock chat and premium features",
-            payload="premium_access",
-            provider_token="",
-            currency="XTR",
-            prices=prices
-        )
-
-# ------------------ PAYMENT ------------------
-
-async def precheckout_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.pre_checkout_query.answer(ok=True)
-
-async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    await update.message.reply_text(
-        "✅ Thank you for joining the premium community!\n\n"
-        "Your profile upgrade is currently in process.\n\n"
-        "⏳ Please wait while we verify and activate your access. "
-        "You will be able to chat with your matches shortly."
-    )
 
 # ------------------ MAIN ------------------
 
@@ -295,10 +352,12 @@ def main():
         fallbacks=[]
     )
 
+    # ORDER MATTERS
+    app.add_handler(MessageHandler(filters.PHOTO, get_file_id), group=0)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_utr_input), group=1)
+
     app.add_handler(conv)
     app.add_handler(CallbackQueryHandler(button))
-    app.add_handler(PreCheckoutQueryHandler(precheckout_callback))
-    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
 
     print("Bot running...")
     app.run_polling()
