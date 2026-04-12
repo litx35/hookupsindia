@@ -3,7 +3,8 @@ from telegram import (
     Update,
     ReplyKeyboardMarkup,
     InlineKeyboardButton,
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup,
+    LabeledPrice
 )
 
 from telegram.ext import (
@@ -13,316 +14,294 @@ from telegram.ext import (
     ConversationHandler,
     CallbackQueryHandler,
     ContextTypes,
+    PreCheckoutQueryHandler,
     filters
 )
 
-TOKEN = "8541678914:AAFV91wTj2hAvu-mQop8m8bIhznOii60g7I"
+TOKEN = "8541678914:AAFux-COt-fm2IZPRHO-MQu_TgSDDh9M5l8"
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 NAME, AGE, STATE, CITY, Q1, Q2, Q3, Q4, Q5, GENDER, IDEAL = range(11)
 
 PAGE_SIZE = 5
 
+# ------------------ YOUR PROFILE PHOTOS ------------------
 PROFILES_DB = { ("Male","Younger"):[
-{"name":"Ananya","age":22,"photo":"AgACAgUAAxkBAAEcddJpw9ak33qqwA_jKats6xwztCq2igACWQ9rGz0eIVbNWMCGIjnTkQEAAwIAA3MAAzoE"},
-{"name":"Priya","age":23,"photo":"AgACAgUAAxkBAAEcdeVpw9eOh6IFL2KkzDpwwYHUJgMi0QACXg9rGz0eIVYoS2rPbNJRKQEAAwIAA3MAAzoE"},
-{"name":"Riya","age":21,"photo":"AgACAgUAAxkBAAEcddtpw9bgmN4Z07-twq9HzaGgL3eFTAACWg9rGz0eIVahUpL5_IOj6gEAAwIAA3MAAzoE"},
-{"name":"Sneha","age":24,"photo":"AgACAgUAAxkBAAEcdedpw9e8mCugZGpr_A5fngQRqg2ZqgACXw9rGz0eIVab-Q3Y1EAY5gEAAwIAA20AAzoE"},
-{"name":"Megha","age":23,"photo":"AgACAgUAAxkBAAEcde1pw9gySP9GzkY31b5VXzK1O4EV5AACYQ9rGz0eIVavQj-hDJGWswEAAwIAA3MAAzoE"},
-{"name":"Divya","age":22,"photo":"AgACAgUAAxkBAAEcdetpw9gIcWjdCTOoGAmGe4U0LewmSAACYA9rGz0eIVa9o5t8FGG6jQEAAwIAA3MAAzoE"},
-{"name":"Aisha","age":25,"photo":"AgACAgUAAxkBAAEcdeFpw9dYnCYPAg8d90849zcqIw3bwAACXA9rGz0eIVaqa3PCOnzkpgEAAwIAA3MAAzoE"},
-{"name":"Nisha","age":27,"photo":"AgACAgUAAxkBAAEcde9pw9hcTYZZenS1I2zcC76k_OhAtwACYg9rGz0eIVZYYGvAVrKe1gEAAwIAA3kAAzoE"},
-{"name":"Shreya","age":26,"photo":"AgACAgUAAxkBAAEcdw1pw_SSYnrlOCxxun8rlbU0DXMgmQACrg9rGz0eIVbpkEdZnFF3DAEAAwIAA3kAAzoE"}
+{"name":"Ananya","age":22,"photo":"AgACAgUAAxkBAAK-yGnbJu-dxuoVwcPDgQt_vVCHr8uKAAJfDmsb20fgVqmkrHoxdKvPAQADAgADeQADOwQ"},
+{"name":"Priya","age":23,"photo":"AgACAgUAAxkBAAK-zGnbJxyG4j-r15VXx_ofzDLrQ634AAJgDmsb20fgVvm1BSUlHna_AQADAgADeQADOwQ"},
+{"name":"Riya","age":21,"photo":"AgACAgUAAxkBAAK-zmnbJzha44Bx1fQeZESnoH1FaKcMAAJhDmsb20fgVs37uifQBZEUAQADAgADeQADOwQ"},
+{"name":"Sneha","age":24,"photo":"AgACAgUAAxkBAAK-q2nbGsfRb6EkcKVb210MhTaSOYykAAJODmsb20fgVuFpydSBQX_UAQADAgADeQADOwQ"},
+{"name":"Megha","age":23,"photo":"AgACAgUAAxkBAAK-0mnbJ2mbPjzvNHbCv-i3j653IHMZAAJjDmsb20fgVhPjS5-u9_4aAQADAgADeQADOwQ"},
+{"name":"Divya","age":22,"photo":"AgACAgUAAxkBAAK-1GnbJ4Yuz6WavuNFYsWFJbKeAzuzAAJlDmsb20fgVtdKG1klfgNPAQADAgADeQADOwQ"},
+{"name":"Aisha","age":25,"photo":"AgACAgUAAxkBAAK-1mnbJ6QnuXm_yPt7y__RXy0YyHLDAAJmDmsb20fgVnHpYDJfy6I-AQADAgADeQADOwQ"},
+{"name":"Nisha","age":27,"photo":"AgACAgUAAxkBAAK-2GnbJ8pCsXaOuuEGOjUAAS75fQq0LAACZw5rG9tH4FZ9RTKv6dwO-QEAAwIAA3kAAzsE"},
+{"name":"Shreya","age":26,"photo":"AgACAgUAAxkBAAK-2mnbJ_HBb-2PDAaMmzKpzYbMyATVAAJpDmsb20fgVtUmZaNsXk0cAQADAgADeQADOwQ"}
 ],
 
 ("Male","Older"):[
-{"name":"Pooja","age":29,"photo":"AgACAgUAAxkBAAEcdgFpw9qLEPMh4E1XbWm0dopp253rzQACaA9rGz0eIVZWbIJgKNwkiQEAAwIAA3MAAzoE"},
-{"name":"krupa","age":31,"photo":"AgACAgUAAxkBAAEceE5pxBaCcMna-BVMo_YfojI2ea9rqgAC6QxrG1cSIVbVFTFx8PS7xgEAAwIAA3MAAzoE"},
-{"name":"geeta","age":33,"photo":"AgACAgUAAxkBAAEcdg9pw9tAZn90uDTDXi7jamh9RtRtDwACbQ9rGz0eIVbFcMa4YDHDzgEAAwIAA3MAAzoE"},
-{"name":"meena","age":30,"photo":"AgACAgUAAxkBAAEcdg1pw9sVFuNuNpab0CuPgbw-RsvMtgACbA9rGz0eIVYx_zBYLaRKvgEAAwIAA3MAAzoE"},
-{"name":"asha","age":32,"photo":"AgACAgUAAxkBAAEcdh1pw9vSssHmo6bzEgLiu55ATzbCtgACcQ9rGz0eIVb32JbmdTTjLgEAAwIAA3MAAzoE"},
-{"name":"kavita","age":36,"photo":"AgACAgUAAxkBAAEceEZpxBY1DCyQTdsTwE7xG-BjkA_u5QAC1w9rGz0eIVbFnCIi1kvicQEAAwIAA3MAAzoE"},
-{"name":"sangeeta","age":34,"photo":"AgACAgUAAxkBAAEceERpxBYfK0K7bVEvvp0plof61jUVlwAC1g9rGz0eIVYrLYQndhkP1gEAAwIAA20AAzoE"},
-{"name":"sudha","age":40,"photo":"AgACAgUAAxkBAAEcdiFpw9wNbIH9Dfrn5Vh8JS8s_TbXowACcg9rGz0eIVbFn2QZc-WVqAEAAwIAA3MAAzoE"},
-{"name":"kalyani","age":37,"photo":"AgACAgUAAxkBAAEcdhtpw9ugP907vtGiOyhYjU5kWYEJHwACcA9rGz0eIVbt1WyUrnqqqgEAAwIAA3MAAzoE"},
-{"name":"Kavya","age":38,"photo":"AgACAgUAAxkBAAEcdiVpw9xRS4jiu325WgcMqKDiW6c3bgACcw9rGz0eIVad168bR0L6MQEAAwIAA3MAAzoE"}
+{"name":"Pooja","age":29,"photo":"AgACAgUAAxkBAAK-3WnbKHxifhfoq_z8V--jS1dbF-Y8AAJqDmsb20fgVjMpO-UEGv63AQADAgADeQADOwQ"},
+{"name":"krupa","age":31,"photo":"AgACAgUAAxkBAAK-32nbKJbCk1xcPEZakInm4MrToMO8AAJsDmsb20fgVvG3zvlKpnV1AQADAgADeQADOwQ"},
+{"name":"geeta","age":33,"photo":"AgACAgUAAxkBAAK-4WnbKMhKfiHcE-ssd5MbRh01v4QAA20OaxvbR-BWL9yl1fLpvqsBAAMCAAN5AAM7BA"},
+{"name":"meena","age":30,"photo":"AgACAgUAAxkBAAK-42nbKN_oYksxEMyeTTJztsCHSHruAAJuDmsb20fgVvc2dtzx1YWBAQADAgADeQADOwQ"},
+{"name":"asha","age":32,"photo":"AgACAgUAAxkBAAK-5WnbKPsVcQqkr-51utIjMgwx6jguAAJvDmsb20fgVrW1MFOpCZBzAQADAgADeQADOwQ"},
+{"name":"kavita","age":36,"photo":"AgACAgUAAxkBAAK-52nbKRegzbVfCGI-xGxNBTf4ZAECAAJwDmsb20fgVj3uXo1gcq6xAQADAgADeQADOwQ"},
+{"name":"sangeeta","age":34,"photo":"AgACAgUAAxkBAAK-6WnbKThrQgV4eFdKOK6KAkpxmgfBAAJxDmsb20fgVvJcrtxbIEiJAQADAgADeQADOwQ"},
+{"name":"sudha","age":40,"photo":"AgACAgUAAxkBAAK-62nbKVIKWUlLoyutnu4GMWBx7wGBAAJyDmsb20fgVuG17jXeS8DvAQADAgADeQADOwQ"},
+{"name":"kalyani","age":37,"photo":"AgACAgUAAxkBAAK-7WnbKXAZ61C8DVbZI9Ba4-xdAAFgYwACcw5rG9tH4Fa1vOjmi96x6AEAAwIAA3kAAzsE"},
+{"name":"Kavya","age":38,"photo":"AgACAgUAAxkBAAK-72nbKYe2RBrQmkIv3w3GrtRsaVEiAAJ0Dmsb20fgVplkpNAYTaVmAQADAgADeQADOwQ"}
 ],
 
 ("Male","Does not matter"):[
-{"name":"Ananya","age":22,"photo":"AgACAgUAAxkBAAEcddJpw9ak33qqwA_jKats6xwztCq2igACWQ9rGz0eIVbNWMCGIjnTkQEAAwIAA3MAAzoE"},
-{"name":"Priya","age":23,"photo":"AgACAgUAAxkBAAEcdeVpw9eOh6IFL2KkzDpwwYHUJgMi0QACXg9rGz0eIVYoS2rPbNJRKQEAAwIAA3MAAzoE"},
-{"name":"Riya","age":21,"photo":"AgACAgUAAxkBAAEcddtpw9bgmN4Z07-twq9HzaGgL3eFTAACWg9rGz0eIVahUpL5_IOj6gEAAwIAA3MAAzoE"},
-{"name":"Sneha","age":24,"photo":"AgACAgUAAxkBAAEcdedpw9e8mCugZGpr_A5fngQRqg2ZqgACXw9rGz0eIVab-Q3Y1EAY5gEAAwIAA20AAzoE"},
-{"name":"Megha","age":23,"photo":"AgACAgUAAxkBAAEcde1pw9gySP9GzkY31b5VXzK1O4EV5AACYQ9rGz0eIVavQj-hDJGWswEAAwIAA3MAAzoE"},
-{"name":"Divya","age":22,"photo":"AgACAgUAAxkBAAEcdetpw9gIcWjdCTOoGAmGe4U0LewmSAACYA9rGz0eIVa9o5t8FGG6jQEAAwIAA3MAAzoE"},
-{"name":"Aisha","age":25,"photo":"AgACAgUAAxkBAAEcdeFpw9dYnCYPAg8d90849zcqIw3bwAACXA9rGz0eIVaqa3PCOnzkpgEAAwIAA3MAAzoE"},
-{"name":"Nisha","age":27,"photo":"AgACAgUAAxkBAAEcde9pw9hcTYZZenS1I2zcC76k_OhAtwACYg9rGz0eIVZYYGvAVrKe1gEAAwIAA3kAAzoE"},
-{"name":"Shreya","age":26,"photo":"AgACAgUAAxkBAAEcdw1pw_SSYnrlOCxxun8rlbU0DXMgmQACrg9rGz0eIVbpkEdZnFF3DAEAAwIAA3kAAzoE"},
-{"name":"Pooja","age":29,"photo":"AgACAgUAAxkBAAEcdgFpw9qLEPMh4E1XbWm0dopp253rzQACaA9rGz0eIVZWbIJgKNwkiQEAAwIAA3MAAzoE"},
-{"name":"krupa","age":31,"photo":"AgACAgUAAxkBAAEceE5pxBaCcMna-BVMo_YfojI2ea9rqgAC6QxrG1cSIVbVFTFx8PS7xgEAAwIAA3MAAzoE"},
-{"name":"geeta","age":33,"photo":"AgACAgUAAxkBAAEcdg9pw9tAZn90uDTDXi7jamh9RtRtDwACbQ9rGz0eIVbFcMa4YDHDzgEAAwIAA3MAAzoE"},
-{"name":"meena","age":30,"photo":"AgACAgUAAxkBAAEcdg1pw9sVFuNuNpab0CuPgbw-RsvMtgACbA9rGz0eIVYx_zBYLaRKvgEAAwIAA3MAAzoE"},
-{"name":"asha","age":32,"photo":"AgACAgUAAxkBAAEcdh1pw9vSssHmo6bzEgLiu55ATzbCtgACcQ9rGz0eIVb32JbmdTTjLgEAAwIAA3MAAzoE"},
-{"name":"kavita","age":36,"photo":"AgACAgUAAxkBAAEceEZpxBY1DCyQTdsTwE7xG-BjkA_u5QAC1w9rGz0eIVbFnCIi1kvicQEAAwIAA3MAAzoE"},
-{"name":"sangeeta","age":34,"photo":"AgACAgUAAxkBAAEceERpxBYfK0K7bVEvvp0plof61jUVlwAC1g9rGz0eIVYrLYQndhkP1gEAAwIAA20AAzoE"},
-{"name":"sudha","age":40,"photo":"AgACAgUAAxkBAAEcdiFpw9wNbIH9Dfrn5Vh8JS8s_TbXowACcg9rGz0eIVbFn2QZc-WVqAEAAwIAA3MAAzoE"},
-{"name":"kalyani","age":37,"photo":"AgACAgUAAxkBAAEcdhtpw9ugP907vtGiOyhYjU5kWYEJHwACcA9rGz0eIVbt1WyUrnqqqgEAAwIAA3MAAzoE"},
-{"name":"Kavya","age":38,"photo":"AgACAgUAAxkBAAEcdiVpw9xRS4jiu325WgcMqKDiW6c3bgACcw9rGz0eIVad168bR0L6MQEAAwIAA3MAAzoE"}
+{"name":"Ananya","age":22,"photo":"AgACAgUAAxkBAAK-yGnbJu-dxuoVwcPDgQt_vVCHr8uKAAJfDmsb20fgVqmkrHoxdKvPAQADAgADeQADOwQ"},
+{"name":"Priya","age":23,"photo":"AgACAgUAAxkBAAK-zGnbJxyG4j-r15VXx_ofzDLrQ634AAJgDmsb20fgVvm1BSUlHna_AQADAgADeQADOwQ"},
+{"name":"Riya","age":21,"photo":"AgACAgUAAxkBAAK-zmnbJzha44Bx1fQeZESnoH1FaKcMAAJhDmsb20fgVs37uifQBZEUAQADAgADeQADOwQ"},
+{"name":"Sneha","age":24,"photo":"AgACAgUAAxkBAAK-q2nbGsfRb6EkcKVb210MhTaSOYykAAJODmsb20fgVuFpydSBQX_UAQADAgADeQADOwQ"},
+{"name":"Megha","age":23,"photo":"AgACAgUAAxkBAAK-0mnbJ2mbPjzvNHbCv-i3j653IHMZAAJjDmsb20fgVhPjS5-u9_4aAQADAgADeQADOwQ"},
+{"name":"Divya","age":22,"photo":"AgACAgUAAxkBAAK-1GnbJ4Yuz6WavuNFYsWFJbKeAzuzAAJlDmsb20fgVtdKG1klfgNPAQADAgADeQADOwQ"},
+{"name":"Aisha","age":25,"photo":"AgACAgUAAxkBAAK-1mnbJ6QnuXm_yPt7y__RXy0YyHLDAAJmDmsb20fgVnHpYDJfy6I-AQADAgADeQADOwQ"},
+{"name":"Nisha","age":27,"photo":"AgACAgUAAxkBAAK-2GnbJ8pCsXaOuuEGOjUAAS75fQq0LAACZw5rG9tH4FZ9RTKv6dwO-QEAAwIAA3kAAzsE"},
+{"name":"Shreya","age":26,"photo":"AgACAgUAAxkBAAK-2mnbJ_HBb-2PDAaMmzKpzYbMyATVAAJpDmsb20fgVtUmZaNsXk0cAQADAgADeQADOwQ"},
+{"name":"Pooja","age":29,"photo":"AgACAgUAAxkBAAK-3WnbKHxifhfoq_z8V--jS1dbF-Y8AAJqDmsb20fgVjMpO-UEGv63AQADAgADeQADOwQ"},
+{"name":"krupa","age":31,"photo":"AgACAgUAAxkBAAK-32nbKJbCk1xcPEZakInm4MrToMO8AAJsDmsb20fgVvG3zvlKpnV1AQADAgADeQADOwQ"},
+{"name":"geeta","age":33,"photo":"AgACAgUAAxkBAAK-4WnbKMhKfiHcE-ssd5MbRh01v4QAA20OaxvbR-BWL9yl1fLpvqsBAAMCAAN5AAM7BA"},
+{"name":"meena","age":30,"photo":"AgACAgUAAxkBAAK-42nbKN_oYksxEMyeTTJztsCHSHruAAJuDmsb20fgVvc2dtzx1YWBAQADAgADeQADOwQ"},
+{"name":"asha","age":32,"photo":"AgACAgUAAxkBAAK-5WnbKPsVcQqkr-51utIjMgwx6jguAAJvDmsb20fgVrW1MFOpCZBzAQADAgADeQADOwQ"},
+{"name":"kavita","age":36,"photo":"AgACAgUAAxkBAAK-52nbKRegzbVfCGI-xGxNBTf4ZAECAAJwDmsb20fgVj3uXo1gcq6xAQADAgADeQADOwQ"},
+{"name":"sangeeta","age":34,"photo":"AgACAgUAAxkBAAK-6WnbKThrQgV4eFdKOK6KAkpxmgfBAAJxDmsb20fgVvJcrtxbIEiJAQADAgADeQADOwQ"},
+{"name":"sudha","age":40,"photo":"AgACAgUAAxkBAAK-62nbKVIKWUlLoyutnu4GMWBx7wGBAAJyDmsb20fgVuG17jXeS8DvAQADAgADeQADOwQ"},
+{"name":"kalyani","age":37,"photo":"AgACAgUAAxkBAAK-7WnbKXAZ61C8DVbZI9Ba4-xdAAFgYwACcw5rG9tH4Fa1vOjmi96x6AEAAwIAA3kAAzsE"},
+{"name":"Kavya","age":38,"photo":"AgACAgUAAxkBAAK-72nbKYe2RBrQmkIv3w3GrtRsaVEiAAJ0Dmsb20fgVplkpNAYTaVmAQADAgADeQADOwQ"}
 ],
+
+
+
 ("Female","Younger"):[
-{"name":"Rahul","age":21,"photo":"AgACAgUAAxkBAAEcdj9pw9_WM7vpBC-0R7wz5iveheT-ZQACdQ9rGz0eIVbOahOSgZQnrwEAAwIAA3gAAzoE"},
-{"name":"Arjun","age":23,"photo":"AgACAgUAAxkBAAEcdjtpw9-aG5-FbzQzuKHrfGQY-p6uYQACdA9rGz0eIVaVClDL40QVTQEAAwIAA3MAAzoE"},
-{"name":"Vikram","age":27,"photo":"AgACAgUAAxkBAAEcdklpw-BgkU1ij2aigVyJ6-iHTG4RIQACeg9rGz0eIVYd3iGKB3GTmgEAAwIAA20AAzoE"},
-{"name":"Amit","age":28,"photo":"AgACAgUAAxkBAAEcdkdpw-Azsrd3ERY0OOzxVWrz8rFc6AACeQ9rGz0eIVY2l3yuyumwEwEAAwIAA3MAAzoE"},
-{"name":"Karan","age":25,"photo":"AgACAgUAAxkBAAEcdkVpw-AFncZibwqCwraXwt0Ru0JTYgACdg9rGz0eIVYAAUAN97fRy0ABAAMCAAN5AAM6BA"}
+{"name":"Rahul","age":21,"photo":"AgACAgUAAxkBAAK-8WnbKhIxKgjr1QWFufeNi5xN5rJ1AAJ1Dmsb20fgVmkPDmg1l6SmAQADAgADeAADOwQ"},
+{"name":"Arjun","age":23,"photo":"AgACAgUAAxkBAAK-82nbKjE0kAHYnjo0WHQRwwXzCz3cAAJ2Dmsb20fgVvCHXan6AAHWwQEAAwIAA3kAAzsE"},
+{"name":"Vikram","age":27,"photo":"AgACAgUAAxkBAAK-9WnbPyHrdcpfYIumxDcMnFpdt5bSAAKWDmsb20fgVk98BSwKst0zAQADAgADeQADOwQ"},
+{"name":"Amit","age":28,"photo":"AgACAgUAAxkBAAK-92nbQTyFy3KGx79QGUSD_-oxv-1YAAKbDmsb20fgVlSX99cl7X-aAQADAgADeQADOwQ"},
+{"name":"Karan","age":25,"photo":"AgACAgUAAxkBAAK--WnbQXCf4iQM1DcOJ-_aUrhHteoCAAKcDmsb20fgVma3SwLpgoSIAQADAgADeQADOwQ"}
 ],
 
 ("Female","Older"):[
-{"name":"Sukesh","age":30,"photo":"AgACAgUAAxkBAAEcdkxpw-DK9Qw8GdfozLjiThOQAAFJN44AAnsPaxs9HiFWxWLKSGqzUBkBAAMCAANzAAM6BA"},
-{"name":"Sunil","age":34,"photo":"AgACAgUAAxkBAAEcdlhpw-Eo3VknYfYelHma9S-HH3twPwACfA9rGz0eIVaP5J0pskWUtQEAAwIAA3gAAzoE"},
-{"name":"Joseph","age":42,"photo":"AgACAgUAAxkBAAEcdmBpw-HQIHiqnWjrZxGjt5IbCHKQhQACfw9rGz0eIVZJCWhVAsMz3gEAAwIAA3MAAzoE"},
-{"name":"Anil","age":38,"photo":"AgACAgUAAxkBAAEcdmRpw-KAGjI44q7Bz85AEm-UQIRdnQACgQ9rGz0eIVaAzMdHUOGM4wEAAwIAA3MAAzoE"},
-{"name":"Vijay","age":48,"photo":"AgACAgUAAxkBAAEcdmhpw-KujLbg7sWHOcBLTkmrpJrKEgACgg9rGz0eIVaUAAFTvE0WN78BAAMCAAN5AAM6BA"}
+{"name":"Sukesh","age":30,"photo":"AgACAgUAAxkBAAK--2nbQdQNKoMTJJe4t0ev9x5uR3MIAAKeDmsb20fgVkvswqQ5RTOOAQADAgADeAADOwQ"},
+{"name":"Sunil","age":34,"photo":"AgACAgUAAxkBAAK-_WnbQgpsB5XkmuwNYt5y09OOkRrQAAKfDmsb20fgVvMhDAqq9mieAQADAgADeQADOwQ"},
+{"name":"Joseph","age":32,"photo":"AgACAgUAAxkBAAK-_2nbQjs1jO3en43frZnn2DiiTL7WAAKjDmsb20fgVuP96kuu_nPjAQADAgADeQADOwQ"},
+{"name":"Anil","age":38,"photo":"AgACAgUAAxkBAAK_AWnbQlzRX0F03gVho11wJZ1vdyVJAAKkDmsb20fgVlE-k2YFPqw5AQADAgADeQADOwQ"},
+{"name":"Vijay","age":38,"photo":"AgACAgUAAxkBAAK_A2nbQoS2KPqJJeV1DztdEWnxtByDAAKlDmsb20fgVsGXBnI93HXpAQADAgADeQADOwQ"}
 ],
 
 ("Female","Does not matter"):[
-{"name":"Rahul","age":21,"photo":"AgACAgUAAxkBAAEcdj9pw9_WM7vpBC-0R7wz5iveheT-ZQACdQ9rGz0eIVbOahOSgZQnrwEAAwIAA3gAAzoE"},
-{"name":"Arjun","age":23,"photo":"AgACAgUAAxkBAAEcdjtpw9-aG5-FbzQzuKHrfGQY-p6uYQACdA9rGz0eIVaVClDL40QVTQEAAwIAA3MAAzoE"},
-{"name":"Vikram","age":27,"photo":"AgACAgUAAxkBAAEcdklpw-BgkU1ij2aigVyJ6-iHTG4RIQACeg9rGz0eIVYd3iGKB3GTmgEAAwIAA20AAzoE"},
-{"name":"Amit","age":28,"photo":"AgACAgUAAxkBAAEcdkdpw-Azsrd3ERY0OOzxVWrz8rFc6AACeQ9rGz0eIVY2l3yuyumwEwEAAwIAA3MAAzoE"},
-{"name":"Karan","age":25,"photo":"AgACAgUAAxkBAAEcdkVpw-AFncZibwqCwraXwt0Ru0JTYgACdg9rGz0eIVYAAUAN97fRy0ABAAMCAAN5AAM6BA"},
-{"name":"Sukesh","age":30,"photo":"AgACAgUAAxkBAAEcdkxpw-DK9Qw8GdfozLjiThOQAAFJN44AAnsPaxs9HiFWxWLKSGqzUBkBAAMCAANzAAM6BA"},
-{"name":"Sunil","age":34,"photo":"AgACAgUAAxkBAAEcdlhpw-Eo3VknYfYelHma9S-HH3twPwACfA9rGz0eIVaP5J0pskWUtQEAAwIAA3gAAzoE"},
-{"name":"Joseph","age":42,"photo":"AgACAgUAAxkBAAEcdmBpw-HQIHiqnWjrZxGjt5IbCHKQhQACfw9rGz0eIVZJCWhVAsMz3gEAAwIAA3MAAzoE"},
-{"name":"Anil","age":38,"photo":"AgACAgUAAxkBAAEcdmRpw-KAGjI44q7Bz85AEm-UQIRdnQACgQ9rGz0eIVaAzMdHUOGM4wEAAwIAA3MAAzoE"},
-{"name":"Vijay","age":48,"photo":"AgACAgUAAxkBAAEcdmhpw-KujLbg7sWHOcBLTkmrpJrKEgACgg9rGz0eIVaUAAFTvE0WN78BAAMCAAN5AAM6BA"}
+{"name":"Rahul","age":21,"photo":"AgACAgUAAxkBAAK-8WnbKhIxKgjr1QWFufeNi5xN5rJ1AAJ1Dmsb20fgVmkPDmg1l6SmAQADAgADeAADOwQ"},
+{"name":"Arjun","age":23,"photo":"AgACAgUAAxkBAAK-82nbKjE0kAHYnjo0WHQRwwXzCz3cAAJ2Dmsb20fgVvCHXan6AAHWwQEAAwIAA3kAAzsE"},
+{"name":"Vikram","age":27,"photo":"AgACAgUAAxkBAAK-9WnbPyHrdcpfYIumxDcMnFpdt5bSAAKWDmsb20fgVk98BSwKst0zAQADAgADeQADOwQ"},
+{"name":"Amit","age":28,"photo":"AgACAgUAAxkBAAK-92nbQTyFy3KGx79QGUSD_-oxv-1YAAKbDmsb20fgVlSX99cl7X-aAQADAgADeQADOwQ"},
+{"name":"Karan","age":25,"photo":"AgACAgUAAxkBAAK--WnbQXCf4iQM1DcOJ-_aUrhHteoCAAKcDmsb20fgVma3SwLpgoSIAQADAgADeQADOwQ"},
+{"name":"Sukesh","age":30,"photo":"AgACAgUAAxkBAAK--2nbQdQNKoMTJJe4t0ev9x5uR3MIAAKeDmsb20fgVkvswqQ5RTOOAQADAgADeAADOwQ"},
+{"name":"Sunil","age":34,"photo":"AgACAgUAAxkBAAK-_WnbQgpsB5XkmuwNYt5y09OOkRrQAAKfDmsb20fgVvMhDAqq9mieAQADAgADeQADOwQ"},
+{"name":"Joseph","age":32,"photo":"AgACAgUAAxkBAAK-_2nbQjs1jO3en43frZnn2DiiTL7WAAKjDmsb20fgVuP96kuu_nPjAQADAgADeQADOwQ"},
+{"name":"Anil","age":38,"photo":"AgACAgUAAxkBAAK_AWnbQlzRX0F03gVho11wJZ1vdyVJAAKkDmsb20fgVlE-k2YFPqw5AQADAgADeQADOwQ"},
+{"name":"Vijay","age":38,"photo":"AgACAgUAAxkBAAK_A2nbQoS2KPqJJeV1DztdEWnxtByDAAKlDmsb20fgVsGXBnI93HXpAQADAgADeQADOwQ"}
 ],
+
 }
 
-
+# ------------------ START ------------------
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Enter your name:")
     return NAME
-
 
 async def name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["name"] = update.message.text
     await update.message.reply_text("Enter your age:")
     return AGE
 
-
 async def age(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["age"] = update.message.text
     await update.message.reply_text("Enter your state:")
     return STATE
-
 
 async def state(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["state"] = update.message.text
     await update.message.reply_text("Enter your city:")
     return CITY
 
-
 async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["city"] = update.message.text
 
     keyboard=[["Yes","No"]]
-
-    await update.message.reply_text(
-        "Are you interested in having s*x  with strangers?",
-        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
-    )
-
+    await update.message.reply_text("Are you interested in having s*x with strangers?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return Q1
 
-
 async def q1(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["q1"]=update.message.text
     keyboard=[["Yes","No"]]
-    await update.message.reply_text(
-        "Are you interested in having s*x with multiple partners?",
-        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
-    )
+    await update.message.reply_text("Are you interested in having s*x with multiple partners?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return Q2
 
-
 async def q2(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["q2"]=update.message.text
     keyboard=[["Yes","No"]]
-    await update.message.reply_text(
-        "Are you interested in recording while having s*x?",
-        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
-    )
+    await update.message.reply_text("Are you interested in nude video calls?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return Q3
 
-
 async def q3(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["q3"]=update.message.text
     keyboard=[["Yes","No"]]
-    await update.message.reply_text(
-        "Are you interested in having s*x in public places?",
-        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
-    )
+    await update.message.reply_text("Are you interested in having s*x outdoors?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return Q4
 
-
 async def q4(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["q4"]=update.message.text
     keyboard=[["Yes","No"]]
-    await update.message.reply_text(
-        "Are you interested in sharing photos and video calls?",
-        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
-    )
+    await update.message.reply_text("Are you interested in sharing nude photos?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return Q5
 
-
 async def q5(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["q5"]=update.message.text
-
     keyboard=[["Male","Female"]]
-
-    await update.message.reply_text(
-        "Select gender",
-        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
-    )
-
+    await update.message.reply_text("Select gender preference", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return GENDER
 
-
 async def gender(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    context.user_data["gender"]=update.message.text
+    context.user_data["gender"] = update.message.text
 
     keyboard=[["Younger","Older","Does not matter"]]
-
-    await update.message.reply_text(
-        "Ideal type?",
-        reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True)
-    )
-
+    await update.message.reply_text("Ideal type?", reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return IDEAL
 
+# ------------------ PROFILE DISPLAY ------------------
 
 async def ideal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    context.user_data["ideal_type"]=update.message.text
-    context.user_data["profile_index"]=0
-
-    await show_profiles(update,context)
-
+    context.user_data["ideal_type"] = update.message.text
+    context.user_data["index"] = 0
+    await send_profiles(update, context)
     return ConversationHandler.END
 
 
-async def show_profiles(update,context):
+async def send_profiles(update, context):
 
-    if update.callback_query:
-        message=update.callback_query.message
-    else:
-        message=update.message
+    chat_id = update.effective_chat.id
 
-    gender=context.user_data["gender"]
-    ideal=context.user_data["ideal_type"]
+    gender = context.user_data.get("gender")
+    ideal = context.user_data.get("ideal_type")
 
-    city=context.user_data["city"]
-    state=context.user_data["state"]
+    user_city = context.user_data.get("city")
+    user_state = context.user_data.get("state")
 
-    key=(gender,ideal)
+    profiles = PROFILES_DB.get((gender, ideal), [])
+    index = context.user_data.get("index", 0)
 
-    profiles=PROFILES_DB.get(key)
+    page = profiles[index:index + PAGE_SIZE]
 
-    if not profiles:
-        profiles=PROFILES_DB[("Male","Younger")]
-
-    index=context.user_data.get("profile_index",0)
-
-    page=profiles[index:index+PAGE_SIZE]
+    if not page:
+        await context.bot.send_message(chat_id=chat_id, text="No more profiles")
+        return
 
     for p in page:
 
-        caption=f"{p['name']}, {p['age']}\n{city}, {state}"
+        caption = f"{p['name']}, {p['age']}\n📍 {user_city}, {user_state}"
 
-        keyboard=InlineKeyboardMarkup([
-            [InlineKeyboardButton(f"Talk with {p['name']}",callback_data="pay")]
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(f"💬 Chat with {p['name']}", callback_data=f"chat_{p['name']}")]
         ])
 
-        await message.reply_photo(
+        await context.bot.send_photo(
+            chat_id=chat_id,
             photo=p["photo"],
             caption=caption,
             reply_markup=keyboard
         )
 
-    context.user_data["profile_index"]=index+PAGE_SIZE
+    context.user_data["index"] = index + PAGE_SIZE
 
-    buttons=[]
+    load_more = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔄 Load More", callback_data="load_more")]
+    ])
 
-    if context.user_data["profile_index"]<len(profiles):
-        buttons.append([InlineKeyboardButton("Load More",callback_data="load")])
+    await context.bot.send_message(chat_id=chat_id, text="👇 Load more profiles", reply_markup=load_more)
 
-    await message.reply_text(
-        "Options:",
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
+# ------------------ BUTTON HANDLER ------------------
 
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-async def button(update:Update,context:ContextTypes.DEFAULT_TYPE):
-
-    query=update.callback_query
+    query = update.callback_query
     await query.answer()
 
-    if query.data=="load":
-        await show_profiles(update,context)
+    data = query.data
 
-    if query.data=="pay":
+    if data == "load_more":
+        await send_profiles(update, context)
+
+    elif data.startswith("chat_"):
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💎 Unlock Premium (500 ⭐)", callback_data="pay")]
+        ])
 
         await query.message.reply_text(
-            "This bot ensures privacy and safety of all users.\n\n"
-            "Become a member of the premium group to directly chat with your interested matches."
+            "🔒 Premium Access Required\n\n"
+            "This fee helps us ensure that all members of the community are genuine and that everyone’s identity and privacy remain protected.\n\n"
+            "It also helps maintain a safe and trusted environment for meaningful connections.\n\n"
+            "💎 Unlock premium access to continue and chat with your matches.",
+            reply_markup=keyboard
         )
 
-        await query.message.reply_text(
-            "Complete payment to unlock chat:\n\nhttps://razorpay.me/@hookupindia?amount=hs5%2BhsUaIlsmW%2BfZKlAvnw%3D%3D"
+    elif data == "pay":
+
+        prices = [LabeledPrice("Premium Access", 500)]
+
+        await context.bot.send_invoice(
+            chat_id=query.message.chat_id,
+            title="Premium Community Access",
+            description="Unlock chat and premium features",
+            payload="premium_access",
+            provider_token="",
+            currency="XTR",
+            prices=prices
         )
 
+# ------------------ PAYMENT ------------------
+
+async def precheckout_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.pre_checkout_query.answer(ok=True)
+
+async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    await update.message.reply_text(
+        "✅ Thank you for joining the premium community!\n\n"
+        "Your profile upgrade is currently in process.\n\n"
+        "⏳ Please wait while we verify and activate your access. "
+        "You will be able to chat with your matches shortly."
+    )
+
+# ------------------ MAIN ------------------
 
 def main():
 
-    app=Application.builder().token(TOKEN).build()
+    app = Application.builder().token(TOKEN).build()
 
-    conv=ConversationHandler(
-
-        entry_points=[CommandHandler("start",start)],
-
+    conv = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
         states={
-
         NAME:[MessageHandler(filters.TEXT,name)],
         AGE:[MessageHandler(filters.TEXT,age)],
         STATE:[MessageHandler(filters.TEXT,state)],
         CITY:[MessageHandler(filters.TEXT,city)],
-
         Q1:[MessageHandler(filters.TEXT,q1)],
         Q2:[MessageHandler(filters.TEXT,q2)],
         Q3:[MessageHandler(filters.TEXT,q3)],
         Q4:[MessageHandler(filters.TEXT,q4)],
         Q5:[MessageHandler(filters.TEXT,q5)],
-
         GENDER:[MessageHandler(filters.TEXT,gender)],
         IDEAL:[MessageHandler(filters.TEXT,ideal)]
-
         },
-
         fallbacks=[]
     )
 
     app.add_handler(conv)
-
     app.add_handler(CallbackQueryHandler(button))
+    app.add_handler(PreCheckoutQueryHandler(precheckout_callback))
+    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
 
     print("Bot running...")
-
     app.run_polling()
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
