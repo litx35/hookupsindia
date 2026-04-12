@@ -273,7 +273,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await query.message.reply_text(
                 "🔒 Premium Access Required\n\n"
-                "This fee helps ensure that all members are genuine and safe."
+                "To ensure safety, privacy, and genuine members, we charge a one-time entry fee.\n\n"
+                "💰 Original Price: ₹2499 ❌\n"
+                "🔥 Today Offer: ₹999 only\n\n"
+                "⚡ Limited time offer\n\n"
+                "Join now and unlock premium access to chat with your matches."
             )
 
             keyboard = InlineKeyboardMarkup([
@@ -284,9 +288,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=query.message.chat_id,
                 photo=QR_IMAGE,
                 caption=
+                caption=
                 "💎 Become a member of the premium community\n\n"
-                "Pay the joining fee using the QR code above.\n\n"
-                "After payment, click 'I Paid'.",
+                "💰 Offer Price: ₹999 (Limited Time)\n\n"
+                "Scan the QR code and complete the payment.\n\n"
+                "After payment, click 'I Paid'."
                 reply_markup=keyboard
             )
             return
