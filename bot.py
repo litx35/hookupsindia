@@ -287,15 +287,15 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_photo(
                 chat_id=query.message.chat_id,
                 photo=QR_IMAGE,
-                caption=
-                caption=
-                "💎 Become a member of the premium community\n\n"
-                "💰 Offer Price: ₹999 (Limited Time)\n\n"
-                "Scan the QR code and complete the payment.\n\n"
-                "After payment, click 'I Paid'."
+                caption=(
+                    "💎 Become a member of the premium community\n\n"
+                    "💰 Original Price: ₹2499 ❌\n"
+                    "🔥 Today Offer: ₹999 only\n\n"
+                    "Scan the QR code and complete the payment.\n\n"
+                    "After payment, click 'I Paid'."
+                ),
                 reply_markup=keyboard
             )
-            return
 
         await query.message.reply_text("💬 Chat unlocked (coming soon)")
 
