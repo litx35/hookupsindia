@@ -195,7 +195,7 @@ async def q4(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def q5(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard=[["Male","Female"]]
-    await update.message.reply_text("Select gender preference",
+    await update.message.reply_text("Select your gender ",
         reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return GENDER
 
@@ -203,7 +203,7 @@ async def gender(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["gender"] = update.message.text
 
     keyboard=[["Younger","Older","Does not matter"]]
-    await update.message.reply_text("Ideal type?",
+    await update.message.reply_text("Select your Ideal type",
         reply_markup=ReplyKeyboardMarkup(keyboard,one_time_keyboard=True))
     return IDEAL
 
